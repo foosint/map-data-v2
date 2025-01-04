@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Python 12.x
+- Python > 3.12.x
 
 ## Install (local)
 
