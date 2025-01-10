@@ -8,18 +8,19 @@ from datetime import datetime, timedelta
 from zipfile import BadZipfile, ZipFile
 
 import requests
-from fastkml import geometry, kml
-from fastkml.features import Placemark
+from fastkml import kml
 from fastkml.containers import Folder
+from fastkml.features import Placemark
 from pygeoif import MultiLineString
 from pygeoif.geometry import Point
 
 import sidc
 
-DATA_REPO_API_URL="https://api.github.com/repos/owlmaps/UAControlMapBackups/contents/"
+DATA_REPO_API_URL = "https://api.github.com/repos/owlmaps/UAControlMapBackups/contents/"
 
 
 class MapData:
+    """MapData"""
 
     def __init__(self):
         self.data = {
@@ -36,7 +37,7 @@ class MapData:
         self.unit_check = {}
         self.session = requests.Session()
         self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:134.0) Gecko/20100101 Firefox/134.0",
             "Accept-Encoding": "*",
             "Connection": "keep-alive",
         }
@@ -118,8 +119,8 @@ class MapData:
 
                     unit_id = self.unit_check[unit.name]
 
-                    lon = unit.geometry.coords[0][0] # type: ignore
-                    lat = unit.geometry.coords[0][1] # type: ignore
+                    lon = unit.geometry.coords[0][0]  # type: ignore
+                    lat = unit.geometry.coords[0][1]  # type: ignore
                     unit_data = [unit_id, [lon, lat]]
                     data["units"][side].append(unit_data)
 
@@ -128,11 +129,7 @@ class MapData:
     def get_fortifications(self, kml_root):
         # print('get_fortifications()')
         areas_key = "Important Areas"
-        fortifications_key = "Fortifications"
-        dragon_teeth_key = "Dragon Teeth"
         areas = None
-        fortifications = None
-        dragon_teeth = None
 
         for feature in kml_root.features:
             if isinstance(feature, Folder):
@@ -141,29 +138,24 @@ class MapData:
         if areas is None:
             print("no areas folder")
             return
-        
 
         fortifications = []
         dragonteeth = []
 
         for feature in areas.features:
             if isinstance(feature, Placemark):
-                if feature.name.startswith("Trenches") or feature.name.startswith("Fortifications"):
+                if (feature.name and feature.name.startswith("Trenches")) or (
+                    feature.name and feature.name.startswith("Fortifications")
+                ):
                     fortifications.append(feature)
-                if feature.name.startswith("Dragon"):
+                if feature.name and feature.name.startswith("Dragon"):
                     dragonteeth.append(feature)
 
-        # print(f'fortifications: {fortifications}')
-        # print(f'dragonteeths: {dragonteeth}')
-
         for fortification in fortifications:
-            # print('fortification loop')
-            # print(type(fortification.geometry))
             if isinstance(fortification.geometry, MultiLineString):
-                # print('- mls')
                 for geom in fortification.geometry.geoms:
                     coords = []
-                    for c in geom.coords: # type: ignore
+                    for c in geom.coords:  # type: ignore
                         coords.append([c[1], c[0]])
                     self.data["fortifications"].append(coords)
 
@@ -171,7 +163,7 @@ class MapData:
             if isinstance(dgt.geometry, MultiLineString):
                 for geom in dgt.geometry.geoms:
                     coords = []
-                    for c in geom.coords: # type: ignore
+                    for c in geom.coords:  # type: ignore
                         coords.append([c[1], c[0]])
                     self.data["dragon_teeth"].append(coords)
 
@@ -191,7 +183,7 @@ class MapData:
             for feature in frontline_folder.features:
                 if feature.name == frontline_key:
                     if isinstance(feature, Placemark):
-                        coords = feature.geometry.coords # type: ignore
+                        coords = feature.geometry.coords  # type: ignore
                         for c in coords:
                             data.append([c[1], c[0]])
 
@@ -218,7 +210,7 @@ class MapData:
 
         # write kmz file to tmp dir
         with open(file_name, mode="wb") as f:
-            f.write(content) # type: ignore
+            f.write(content)  # type: ignore
 
         # unzip the kmz and read the doc.kml file
         try:
@@ -235,10 +227,7 @@ class MapData:
             return data
 
         # parse kml
-        # k = kml.KML()
-        # k.from_string(doc)
-
-        k = kml.KML.from_string(doc)
+        k = kml.KML.from_string(doc)  # type: ignore
 
         # get root
         kml_doc = list(k.features)
@@ -283,7 +272,7 @@ class MapData:
             return False
 
         # apply filter kmz method
-        kmz_list = list(filter(filter_kmz, file_list_json)) # type: ignore
+        kmz_list = list(filter(filter_kmz, file_list_json))  # type: ignore
 
         # sub method to reoganize the data object
         def prepare_data(item):
@@ -522,8 +511,7 @@ class MapData:
                 json.dump(data, fh, sort_keys=True, separators=(",", ":"))
 
     def create_tmp_dir(self):
-        os.makedirs('./tmp', exist_ok=True)
-
+        os.makedirs("./tmp", exist_ok=True)
 
 
 if __name__ == "__main__":
